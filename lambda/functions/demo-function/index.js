@@ -4,7 +4,7 @@
  * This function is automatically deployed when changes are merged
  * to the main branch via GitHub Actions.
  *
- * Version: 1.0.0
+ * Version: 1.1.0
  */
 
 exports.handler = async (event) => {
@@ -18,7 +18,7 @@ exports.handler = async (event) => {
         },
         body: JSON.stringify({
             message: 'Hello from AWS Lambda!',
-            version: '1.0.0',
+            version: '1.1.0',
             timestamp: new Date().toISOString(),
             deployment: 'Automated via GitHub Actions',
             event: event
