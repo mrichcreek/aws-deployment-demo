@@ -60,6 +60,7 @@ This repository demonstrates automated deployment to AWS Amplify and Lambda usin
 
 ## AWS Resources
 
-- **Amplify App ID**: (will be added after creation)
+- **Amplify App ID**: `d2fvm8rz4epfm2`
+- **Amplify URL**: https://main.d2fvm8rz4epfm2.amplifyapp.com
 - **Lambda Function**: `demo-deployment-function`
 - **Region**: us-east-1

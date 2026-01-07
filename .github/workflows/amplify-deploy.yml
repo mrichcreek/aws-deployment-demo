@@ -8,6 +8,10 @@ on:
       - 'amplify/**'
   workflow_dispatch:
 
+env:
+  AWS_REGION: us-east-1
+  AMPLIFY_APP_ID: d2fvm8rz4epfm2
+
 jobs:
   deploy:
     name: Deploy to Amplify
@@ -22,33 +26,33 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Zip amplify source
+      - name: Create deployment package
         run: |
           cd amplify/src
-          zip -r ../../amplify-deploy.zip .
+          zip -r ../../amplify-source.zip .
 
-      - name: Start Amplify deployment
+      - name: Deploy to Amplify
         run: |
+          # Create a new deployment and get the upload URL
+          DEPLOYMENT_INFO=$(aws amplify create-deployment \
+            --app-id ${{ env.AMPLIFY_APP_ID }} \
+            --branch-name main)
+
+          JOB_ID=$(echo $DEPLOYMENT_INFO | jq -r '.jobId')
+          UPLOAD_URL=$(echo $DEPLOYMENT_INFO | jq -r '.zipUploadUrl')
+
+          echo "Job ID: $JOB_ID"
+
+          # Upload the zip file to the pre-signed URL
+          curl --request PUT --upload-file amplify-source.zip "$UPLOAD_URL"
+
+          # Start the deployment
           aws amplify start-deployment \
-            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --app-id ${{ env.AMPLIFY_APP_ID }} \
             --branch-name main \
-            --source-url s3://${{ secrets.DEPLOYMENT_BUCKET }}/amplify-deploy.zip
+            --job-id $JOB_ID
 
-      - name: Upload to S3 and deploy
-        run: |
-          # Upload the zip to S3
-          aws s3 cp amplify-deploy.zip s3://${{ secrets.DEPLOYMENT_BUCKET }}/amplify-deploy.zip
-
-          # Create a new deployment
-          DEPLOYMENT=$(aws amplify create-deployment \
-            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
-            --branch-name main \
-            --query 'zipUploadUrl' \
-            --output text)
-
-          # Upload directly to the pre-signed URL
-          curl -X PUT -H "Content-Type: application/zip" --data-binary @amplify-deploy.zip "$DEPLOYMENT"
-
-          echo "Deployment initiated successfully!"
+          echo "Deployment started! Job ID: $JOB_ID"
+          echo "View at: https://${{ env.AWS_REGION }}.console.aws.amazon.com/amplify/home?region=${{ env.AWS_REGION }}#/d2fvm8rz4epfm2/main"
