@@ -18,7 +18,7 @@ exports.handler = async (event) => {
         },
         body: JSON.stringify({
             message: 'Hello from AWS Lambda!',
-            version: '1.1.0',
+            version: '1.2.0',
             timestamp: new Date().toISOString(),
             deployment: 'Automated via GitHub Actions',
             event: event

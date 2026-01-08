@@ -1,0 +1,607 @@
+================================================================================
+              SETUP GUIDE: GitHub to AWS Deployment Pipeline
+                      (For New Account Configuration)
+================================================================================
+
+PREREQUISITES
+-------------
+Before starting, ensure the following are installed and configured:
+
+1. Git: https://git-scm.com/download/win
+2. GitHub CLI: https://cli.github.com/
+3. AWS CLI: https://aws.amazon.com/cli/
+
+Required information from the new account owner:
+- GitHub username
+- AWS Account ID
+- AWS IAM user with permissions for Lambda and Amplify
+
+
+================================================================================
+STEP 1: AUTHENTICATE GITHUB CLI
+================================================================================
+
+Open PowerShell and run:
+
+   gh auth login
+
+Follow the prompts:
+- Select: GitHub.com
+- Select: HTTPS
+- Select: Login with a web browser
+- Complete the browser authentication
+
+Verify authentication:
+
+   gh auth status
+
+Expected output should show "Logged in to github.com account [USERNAME]"
+
+
+================================================================================
+STEP 2: AUTHENTICATE AWS CLI
+================================================================================
+
+Run:
+
+   aws configure
+
+Enter when prompted:
+- AWS Access Key ID: [From IAM user]
+- AWS Secret Access Key: [From IAM user]
+- Default region: us-east-1
+- Default output format: json
+
+Verify authentication:
+
+   aws sts get-caller-identity
+
+Should display the account ID and IAM user ARN.
+
+
+================================================================================
+STEP 3: CREATE PROJECT DIRECTORY AND FILES
+================================================================================
+
+Create the project folder:
+
+   mkdir C:\aws-deployment-demo
+   cd C:\aws-deployment-demo
+   mkdir -p amplify/src
+   mkdir -p lambda/functions/demo-function
+   mkdir -p .github/workflows
+
+
+--------------------------------------------------------------------------------
+FILE 1: README.md
+--------------------------------------------------------------------------------
+Create file: C:\aws-deployment-demo\README.md
+
+Content:
+----------------------------------------
+# AWS Deployment Demo
+
+This repository demonstrates automated deployment to AWS Amplify and Lambda using GitHub Actions.
+
+## Repository Structure
+
+```
+├── amplify/                 # Files deployed to AWS Amplify
+│   └── src/
+│       └── index.html      # Demo web page
+├── lambda/                  # Files deployed to AWS Lambda
+│   └── functions/
+│       └── demo-function/  # Demo Lambda function
+├── .github/
+│   └── workflows/
+│       ├── amplify-deploy.yml   # Deploys to Amplify on merge
+│       └── lambda-deploy.yml    # Deploys to Lambda on merge
+└── README.md
+```
+
+## Workflow
+
+1. **Developers** create feature branches and push code changes
+2. **Pull Requests** are opened to merge changes into `main`
+3. **Reviewer** reviews and approves the changes
+4. **On merge to main**, GitHub Actions automatically deploys:
+   - Files in `amplify/` → AWS Amplify
+   - Files in `lambda/` → AWS Lambda
+
+## AWS Resources
+
+- **Amplify App ID**: [WILL BE ADDED AFTER CREATION]
+- **Amplify URL**: [WILL BE ADDED AFTER CREATION]
+- **Lambda Function**: demo-deployment-function
+- **Region**: us-east-1
+----------------------------------------
+
+
+--------------------------------------------------------------------------------
+FILE 2: amplify/src/index.html
+--------------------------------------------------------------------------------
+Create file: C:\aws-deployment-demo\amplify\src\index.html
+
+Content:
+----------------------------------------
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Deployment Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 { color: #333; margin-bottom: 20px; font-size: 2.5em; }
+        .version {
+            background: #667eea;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        p { color: #666; line-height: 1.8; margin-bottom: 15px; }
+        .status {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .status h3 { color: #4caf50; margin-bottom: 10px; }
+        .deploy-info {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AWS Deployment Demo</h1>
+        <div class="version">Version 1.0.0</div>
+        <p>This page is automatically deployed to <strong>AWS Amplify</strong>
+           when changes are merged to the main branch.</p>
+        <p>Edit files in the <code>amplify/src/</code> folder,
+           create a pull request, and watch the magic happen!</p>
+        <div class="status">
+            <h3>Deployment Successful</h3>
+            <p>This site is live and being served from AWS Amplify.</p>
+        </div>
+        <div class="deploy-info">
+            <strong>How it works:</strong><br>
+            Push to GitHub -> Pull Request -> Review & Approve -> Auto Deploy to AWS
+        </div>
+    </div>
+</body>
+</html>
+----------------------------------------
+
+
+--------------------------------------------------------------------------------
+FILE 3: lambda/functions/demo-function/index.js
+--------------------------------------------------------------------------------
+Create file: C:\aws-deployment-demo\lambda\functions\demo-function\index.js
+
+Content:
+----------------------------------------
+/**
+ * Demo Lambda Function
+ * Automatically deployed via GitHub Actions
+ * Version: 1.0.0
+ */
+
+exports.handler = async (event) => {
+    console.log('Event received:', JSON.stringify(event, null, 2));
+
+    const response = {
+        statusCode: 200,
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+            message: 'Hello from AWS Lambda!',
+            version: '1.0.0',
+            timestamp: new Date().toISOString(),
+            deployment: 'Automated via GitHub Actions',
+            event: event
+        }, null, 2)
+    };
+
+    return response;
+};
+----------------------------------------
+
+
+--------------------------------------------------------------------------------
+FILE 4: .github/workflows/lambda-deploy.yml
+--------------------------------------------------------------------------------
+Create file: C:\aws-deployment-demo\.github\workflows\lambda-deploy.yml
+
+Content:
+----------------------------------------
+name: Deploy to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Lambda Functions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Deploy demo-function
+        run: |
+          cd lambda/functions/demo-function
+          if [ -f package.json ]; then
+            npm ci --production
+          fi
+          zip -r ../../../demo-function.zip .
+          aws lambda update-function-code \
+            --function-name demo-deployment-function \
+            --zip-file fileb://../../../demo-function.zip
+          echo "Lambda function deployed successfully!"
+
+      - name: Verify deployment
+        run: |
+          aws lambda wait function-updated --function-name demo-deployment-function
+          aws lambda get-function --function-name demo-deployment-function \
+            --query 'Configuration.[FunctionName,LastModified]'
+          echo "Deployment verified!"
+----------------------------------------
+
+
+--------------------------------------------------------------------------------
+FILE 5: .github/workflows/amplify-deploy.yml
+--------------------------------------------------------------------------------
+Create file: C:\aws-deployment-demo\.github\workflows\amplify-deploy.yml
+
+NOTE: Replace [AMPLIFY_APP_ID] with actual App ID after creating Amplify app in Step 5.
+
+Content:
+----------------------------------------
+name: Deploy to AWS Amplify
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'amplify/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  AMPLIFY_APP_ID: [AMPLIFY_APP_ID]
+
+jobs:
+  deploy:
+    name: Deploy to Amplify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create deployment package
+        run: |
+          cd amplify/src
+          zip -r ../../amplify-source.zip .
+
+      - name: Deploy to Amplify
+        run: |
+          DEPLOYMENT_INFO=$(aws amplify create-deployment \
+            --app-id ${{ env.AMPLIFY_APP_ID }} \
+            --branch-name main)
+
+          JOB_ID=$(echo $DEPLOYMENT_INFO | jq -r '.jobId')
+          UPLOAD_URL=$(echo $DEPLOYMENT_INFO | jq -r '.zipUploadUrl')
+
+          echo "Job ID: $JOB_ID"
+
+          curl --request PUT --upload-file amplify-source.zip "$UPLOAD_URL"
+
+          aws amplify start-deployment \
+            --app-id ${{ env.AMPLIFY_APP_ID }} \
+            --branch-name main \
+            --job-id $JOB_ID
+
+          echo "Deployment started!"
+----------------------------------------
+
+
+--------------------------------------------------------------------------------
+FILE 6: .gitignore
+--------------------------------------------------------------------------------
+Create file: C:\aws-deployment-demo\.gitignore
+
+Content:
+----------------------------------------
+node_modules/
+*.zip
+dist/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.env
+.env.local
+*.log
+----------------------------------------
+
+
+================================================================================
+STEP 4: CREATE AWS LAMBDA FUNCTION
+================================================================================
+
+First, find an existing IAM role for Lambda, or create one:
+
+   aws iam list-roles --query "Roles[?contains(RoleName,'lambda')].RoleName"
+
+If no suitable role exists, you'll need to create one in the AWS Console.
+
+Create the Lambda function (replace [ROLE_ARN] with actual role ARN):
+
+   cd C:\aws-deployment-demo\lambda\functions\demo-function
+   powershell -Command "Compress-Archive -Path * -DestinationPath ../../../demo-function.zip -Force"
+   cd C:\aws-deployment-demo
+
+   aws lambda create-function ^
+     --function-name demo-deployment-function ^
+     --runtime nodejs20.x ^
+     --role [ROLE_ARN] ^
+     --handler index.handler ^
+     --zip-file fileb://demo-function.zip ^
+     --description "Demo function deployed via GitHub Actions" ^
+     --region us-east-1
+
+Verify the function was created:
+
+   aws lambda get-function --function-name demo-deployment-function --region us-east-1
+
+
+================================================================================
+STEP 5: CREATE AWS AMPLIFY APP
+================================================================================
+
+Create the Amplify app:
+
+   aws amplify create-app ^
+     --name "deployment-demo" ^
+     --description "Demo app deployed via GitHub Actions" ^
+     --platform WEB ^
+     --region us-east-1
+
+*** IMPORTANT: Note the "appId" from the output! You'll need it. ***
+
+Create the main branch:
+
+   aws amplify create-branch ^
+     --app-id [APP_ID] ^
+     --branch-name main ^
+     --description "Main production branch" ^
+     --region us-east-1
+
+Now go back and update the amplify-deploy.yml file:
+- Replace [AMPLIFY_APP_ID] with the actual App ID
+
+Also update README.md with:
+- Amplify App ID
+- Amplify URL: https://main.[APP_ID].amplifyapp.com
+
+
+================================================================================
+STEP 6: INITIALIZE GIT AND CREATE GITHUB REPOSITORY
+================================================================================
+
+Initialize the repository:
+
+   cd C:\aws-deployment-demo
+   git init
+   git add .
+   git commit -m "Initial commit: AWS deployment demo structure"
+
+Create GitHub repository (replace [GITHUB_USERNAME]):
+
+   git branch -M main
+   gh repo create aws-deployment-demo --public --source=. --remote=origin --push ^
+     --description "Demo: Automated deployment to AWS Amplify and Lambda via GitHub Actions"
+
+Verify the repository was created:
+- Go to: https://github.com/[GITHUB_USERNAME]/aws-deployment-demo
+
+
+================================================================================
+STEP 7: CREATE AWS ACCESS KEYS FOR GITHUB
+================================================================================
+
+Create access keys for GitHub Actions:
+
+Option A - Use existing IAM user:
+
+   aws iam create-access-key --user-name [IAM_USERNAME]
+
+Option B - Create dedicated user (more secure):
+
+   aws iam create-user --user-name github-actions-deployer
+   aws iam attach-user-policy --user-name github-actions-deployer ^
+     --policy-arn arn:aws:iam::aws:policy/AWSLambda_FullAccess
+   aws iam attach-user-policy --user-name github-actions-deployer ^
+     --policy-arn arn:aws:iam::aws:policy/AdministratorAccess-Amplify
+   aws iam create-access-key --user-name github-actions-deployer
+
+*** SAVE THE ACCESS KEY ID AND SECRET ACCESS KEY IMMEDIATELY! ***
+*** THE SECRET IS ONLY SHOWN ONCE! ***
+
+
+================================================================================
+STEP 8: ADD GITHUB SECRETS
+================================================================================
+
+Add AWS credentials as GitHub secrets:
+
+   cd C:\aws-deployment-demo
+   gh secret set AWS_ACCESS_KEY_ID --body "[ACCESS_KEY_ID]"
+   gh secret set AWS_SECRET_ACCESS_KEY --body "[SECRET_ACCESS_KEY]"
+
+Verify secrets were added:
+- Go to GitHub repo → Settings → Secrets and variables → Actions
+- Should see AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY listed
+
+
+================================================================================
+STEP 9: SET UP BRANCH PROTECTION
+================================================================================
+
+Create a JSON file for branch protection:
+
+Create file: C:\aws-deployment-demo\branch-protection.json
+
+Content:
+----------------------------------------
+{
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 1
+  },
+  "enforce_admins": false,
+  "required_status_checks": null,
+  "restrictions": null
+}
+----------------------------------------
+
+Apply branch protection (replace [GITHUB_USERNAME]):
+
+   gh api repos/[GITHUB_USERNAME]/aws-deployment-demo/branches/main/protection ^
+     -X PUT --input branch-protection.json
+
+Delete the JSON file after:
+
+   del branch-protection.json
+
+
+================================================================================
+STEP 10: TEST THE SETUP
+================================================================================
+
+Create a test branch:
+
+   git checkout -b test-deployment
+
+Make a small change to amplify/src/index.html:
+- Change "Version 1.0.0" to "Version 1.0.1"
+
+Commit and push:
+
+   git add .
+   git commit -m "Test deployment: Update to version 1.0.1"
+   git push -u origin test-deployment
+
+Create a Pull Request:
+
+   gh pr create --title "Test deployment v1.0.1" --body "Testing the deployment pipeline"
+
+Merge the PR (as admin to bypass approval for testing):
+
+   gh pr merge test-deployment --merge --admin
+
+Check the Actions tab on GitHub to watch the deployments run.
+
+Verify deployments:
+1. Visit the Amplify URL - should show new version
+2. Test Lambda:
+   aws lambda invoke --function-name demo-deployment-function ^
+     --payload "{}" response.json && type response.json
+
+
+================================================================================
+SUMMARY OF CREATED RESOURCES
+================================================================================
+
+After completing this setup, you will have:
+
+GitHub:
+- Repository: https://github.com/[USERNAME]/aws-deployment-demo
+- Branch protection requiring 1 approval
+- Two GitHub Actions workflows
+- AWS credentials stored as secrets
+
+AWS:
+- Amplify App: deployment-demo (App ID: [noted during creation])
+- Amplify URL: https://main.[APP_ID].amplifyapp.com
+- Lambda Function: demo-deployment-function
+- Region: us-east-1
+
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+ISSUE: GitHub Actions fails with "credentials" error
+SOLUTION: Verify AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets are set correctly
+
+ISSUE: Lambda deployment fails with "function not found"
+SOLUTION: Ensure the Lambda function name matches exactly: demo-deployment-function
+
+ISSUE: Amplify deployment fails
+SOLUTION: Check the AMPLIFY_APP_ID in amplify-deploy.yml matches your app
+
+ISSUE: Branch protection prevents merging
+SOLUTION: Use --admin flag: gh pr merge [branch] --merge --admin
+
+ISSUE: gh command not found
+SOLUTION: Close and reopen PowerShell after installing GitHub CLI
+
+================================================================================

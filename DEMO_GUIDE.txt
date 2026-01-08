@@ -1,0 +1,211 @@
+================================================================================
+                    AWS DEPLOYMENT DEMO - PRESENTATION GUIDE
+================================================================================
+
+OVERVIEW
+--------
+This guide walks you through demonstrating the automated GitHub-to-AWS
+deployment pipeline to your boss.
+
+WHAT THIS SYSTEM DOES
+---------------------
+- Developers push code changes to GitHub
+- Pull Requests require approval before merging (code review workflow)
+- On merge to main branch:
+  - Files in amplify/ folder → Deploy to AWS Amplify (web hosting)
+  - Files in lambda/ folder → Deploy to AWS Lambda (serverless functions)
+
+================================================================================
+PART 1: SHOW THE CURRENT SETUP
+================================================================================
+
+STEP 1: Show the GitHub Repository
+-----------------------------------
+1. Open browser and go to: https://github.com/mrichcreek/aws-deployment-demo
+
+2. Point out the folder structure:
+   - amplify/src/         → Web files that deploy to Amplify
+   - lambda/functions/    → Lambda function code
+   - .github/workflows/   → Automation scripts (GitHub Actions)
+
+3. Click on "Settings" → "Branches" to show branch protection:
+   - Main branch requires 1 approval before merging
+   - This ensures code review before deployment
+
+
+STEP 2: Show the Live Amplify Website
+--------------------------------------
+1. Open: https://main.d2fvm8rz4epfm2.amplifyapp.com
+
+2. Point out:
+   - The version number (currently 1.1.0)
+   - Explain this page was automatically deployed when code was merged
+
+
+STEP 3: Show the Lambda Function
+---------------------------------
+Option A - Via AWS Console:
+1. Go to: https://console.aws.amazon.com/lambda
+2. Select region: us-east-1 (N. Virginia)
+3. Find function: demo-deployment-function
+4. Click "Test" tab → Create test event → Test
+5. Show the response includes version "1.1.0"
+
+Option B - Via Command Line (if available):
+Run this command:
+   aws lambda invoke --function-name demo-deployment-function --payload "{}" response.json && type response.json
+
+Expected output shows: "version": "1.1.0"
+
+
+STEP 4: Show GitHub Actions (Automation)
+-----------------------------------------
+1. In GitHub repo, click "Actions" tab
+2. Show the completed workflow runs
+3. Click on a run to show the deployment logs
+4. Point out both workflows:
+   - "Deploy to AWS Amplify"
+   - "Deploy to AWS Lambda"
+
+
+================================================================================
+PART 2: LIVE DEMONSTRATION - Making a Change
+================================================================================
+
+STEP 1: Create a New Branch
+----------------------------
+Open PowerShell/Terminal in the project folder:
+
+   cd C:\aws-deployment-demo
+   git checkout main
+   git pull origin main
+   git checkout -b demo-update
+
+
+STEP 2: Make a Visible Change
+------------------------------
+Edit the file: amplify/src/index.html
+
+Find this line:
+   <div class="version">Version 1.1.0</div>
+
+Change it to:
+   <div class="version">Version 1.2.0 - Demo for [Boss's Name]</div>
+
+Save the file.
+
+
+STEP 3: Also Update the Lambda Function (Optional)
+---------------------------------------------------
+Edit: lambda/functions/demo-function/index.js
+
+Find:
+   version: '1.1.0',
+
+Change to:
+   version: '1.2.0',
+
+Save the file.
+
+
+STEP 4: Commit and Push
+------------------------
+   git add .
+   git commit -m "Demo update to version 1.2.0"
+   git push -u origin demo-update
+
+
+STEP 5: Create Pull Request
+----------------------------
+   gh pr create --title "Demo: Update to v1.2.0" --body "Live demo of the deployment pipeline"
+
+Or do it manually on GitHub:
+1. Go to the repository
+2. Click "Compare & pull request"
+3. Add a title and description
+4. Click "Create pull request"
+
+
+STEP 6: Show the Review Process
+--------------------------------
+1. Show the PR on GitHub
+2. Click "Files changed" to review the code
+3. Explain: "This is where I would review the developer's changes"
+4. Click "Review changes" → "Approve" → "Submit review"
+
+
+STEP 7: Merge and Watch Deployment
+-----------------------------------
+1. Click "Merge pull request" → "Confirm merge"
+2. Go to "Actions" tab immediately
+3. Watch the workflows start running (yellow circles)
+4. Wait for them to complete (green checkmarks) - usually 30-60 seconds
+
+
+STEP 8: Verify the Deployment
+------------------------------
+1. Refresh the Amplify website: https://main.d2fvm8rz4epfm2.amplifyapp.com
+   - Should now show "Version 1.2.0 - Demo for [Boss's Name]"
+
+2. Test Lambda (via AWS Console or CLI):
+   - Should now return version "1.2.0"
+
+
+================================================================================
+PART 3: KEY TALKING POINTS
+================================================================================
+
+BENEFITS TO HIGHLIGHT
+---------------------
+1. CODE REVIEW: All changes require approval before going live
+   - Prevents bugs and security issues
+   - Creates audit trail of who approved what
+
+2. AUTOMATION: No manual deployment steps
+   - Reduces human error
+   - Consistent deployments every time
+
+3. SEPARATION: Different folders deploy to different services
+   - amplify/ → Web hosting (Amplify)
+   - lambda/ → Backend functions (Lambda)
+   - Changes only deploy what's needed
+
+4. VISIBILITY: Everyone can see deployment status
+   - GitHub Actions shows pass/fail
+   - Easy to troubleshoot if something fails
+
+5. ROLLBACK: Easy to revert if needed
+   - Git history tracks all changes
+   - Can revert a PR to undo a deployment
+
+
+POTENTIAL QUESTIONS & ANSWERS
+-----------------------------
+Q: What if a deployment fails?
+A: GitHub Actions will show the error. We can fix the code and push again.
+   The main branch remains unchanged until a successful merge.
+
+Q: Can multiple people work at the same time?
+A: Yes! Each developer works on their own branch. PRs are queued and
+   merged one at a time after approval.
+
+Q: How secure is this?
+A: AWS credentials are stored as GitHub Secrets (encrypted). Only
+   repository admins can view or modify them.
+
+Q: What about different environments (dev/staging/prod)?
+A: We can extend this with multiple branches. For example:
+   - develop branch → deploys to dev environment
+   - main branch → deploys to production
+
+
+================================================================================
+RESOURCES
+================================================================================
+
+GitHub Repository:    https://github.com/mrichcreek/aws-deployment-demo
+Amplify Website:      https://main.d2fvm8rz4epfm2.amplifyapp.com
+Lambda Function:      demo-deployment-function (us-east-1)
+AWS Account ID:       087243890715
+
+================================================================================
